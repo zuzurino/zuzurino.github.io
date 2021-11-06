@@ -1,0 +1,41 @@
+body {
+    font-family: monospace;
+    font-size: 16px;
+}
+
+.task {
+    color: rgb(0, 0, 0);
+    padding-top: 4px;
+    user-select: none;
+}
+
+.menu {
+    background-color: gainsboro;
+    border: 1px solid black;
+    cursor: default;
+    padding: 2px;
+}
+
+.action {
+    font-family: monospace;
+    border: 1px solid black;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.name, .progress {
+    padding-left: 8px;
+    user-select:contain;
+}
+
+.container {
+    padding-left: 16px;
+}
+
+.dark {
+    background-color: gray !important;
+}
+
+.complete {
+    background-color: mediumseagreen !important;
+}
