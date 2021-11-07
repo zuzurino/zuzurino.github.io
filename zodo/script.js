@@ -40,6 +40,7 @@ const assertInstance = (value, constructor, name) => assertError(
 );
 
 class Task {
+    static save = false;
     static createHTML(task) {
         const element = createElement('div', {
             attributes: {class: 'task'}
@@ -65,7 +66,7 @@ class Task {
             listeners: [
                 ['click', event => {
                     if (!confirm(`remove "${task.name}"?`)) return;
-                    if (task.parent !== null) return task.parent.removeChild(task);
+                    task.parent = null;
                     const children = task.children;
                     for (const child of children) {
                         child.parent = null;
@@ -107,8 +108,14 @@ class Task {
         });
         return {element, menu, remove, edit, add, name, progress, container};
     }
-    static import() {
-        //create task from json
+    static import({name, children, done, show}, parent = null) {
+        const task = new Task(name, parent);
+        for (const child of children) {
+            this.import(child, task);
+        }
+        task.done = done;
+        task.show = show;
+        return task;
     }
     #name;
     #parent = null;
@@ -129,6 +136,7 @@ class Task {
         const string = String(value);
         this.#name = string;
         this.html.name.innerText = string;
+        if (Task.save) save();
     }
     get parent() {
         return this.#parent;
@@ -138,7 +146,9 @@ class Task {
         if (this.contains(task)) throw new Error('child cannot contain parent');
         if (this.#parent !== null) this.#parent.removeChild(this);
         if (task !== null) task.appendChild(this);
+        this.#parent?.refresh();
         this.#parent = task;
+        if (Task.save) save();
     }
     get children() {
         return this.#children.slice();
@@ -152,6 +162,7 @@ class Task {
         if (this.#parent !== null) this.#parent.done = this.#parent.progress === 1;
         if (value) this.html.menu.classList.add('complete');
         else this.html.menu.classList.remove('complete');
+        if (Task.save) save();
     }
     get show() {
         return this.#show;
@@ -163,10 +174,14 @@ class Task {
         this.html.container.style.display = value ? 'inherit' : 'none';
         if (value) this.html.menu.classList.remove('dark');
         else this.html.menu.classList.add('dark');
+        if (Task.save) save();
     }
     get progress() {
         const total = this.#children.length;
-        if (total === 0) return 0;
+        if (total === 0) {
+            this.html.progress.innerText = '';
+            return 0;
+        };
         let done = 0;
         for (const child of this.#children) {
             if (child.progress === 1 || child.done) done++;
@@ -194,21 +209,28 @@ class Task {
         }
     }
     export() {
-        //export to json
+        return {
+            name: this.name,
+            children: this.children.map(c => c.export()),
+            done: this.done,
+            show: this.show
+        };
+    }
+    refresh() {
+        this.name = this.name;
+        this.done = this.done;
+        this.show = this.show;
+        this.progress;
     }
 }
 
-const root = new Task('root');
-const a = root.add('a');
-const b = root.add('b');
-const b1 = b.add('b1');
-const b2 = b.add('b2');
-const c = root.add('c');
-const c1 = c.add('c1');
-const c2 = c.add('c2');
-const c3 = c.add('c3');
-const d = root.add('d');
-const d1 = d.add('d1');
-const d1a = d1.add('d1a');
+const ROOT_NAME = 'root';
+const STORAGE_KEY = 'save';
 
+const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(root.export()));
+const load = () => STORAGE_KEY in localStorage ? Task.import(JSON.parse(localStorage.getItem(STORAGE_KEY))) : new Task(ROOT_NAME);
+
+const root = load();
 document.body.appendChild(root.html.element);
+
+Task.save = true;
