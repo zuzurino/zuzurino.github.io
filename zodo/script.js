@@ -218,9 +218,8 @@ class Task {
     }
     refresh() {
         this.name = this.name;
-        this.done = this.done;
+        this.done = this.progress === 1;
         this.show = this.show;
-        this.progress;
     }
 }
 
